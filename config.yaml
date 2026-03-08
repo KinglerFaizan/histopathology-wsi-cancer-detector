@@ -1,0 +1,80 @@
+# ============================================================
+# Histopathology WSI Cancer Detector — Configuration
+# ============================================================
+
+# --- Data ---
+data:
+  dataset: "pcam"                        # pcam | custom_wsi
+  data_dir: "./data/pcam"
+  img_size: 96                           # PCam native; resize to 224 for EfficientNet
+  patch_size: 256                        # For WSI tiling
+  overlap: 0                             # Tile overlap in pixels
+  tissue_threshold: 0.5                  # Min tissue fraction to keep a tile
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+  num_workers: 4
+
+# --- Model ---
+model:
+  backbone: "efficientnet_b4"            # efficientnet_b4 | resnet50 | resnet34
+  pretrained: true
+  dropout: 0.4
+  hidden_dim: 256
+  num_classes: 1                         # Binary: tumor vs. normal
+
+# --- Training ---
+training:
+  epochs: 30
+  batch_size: 64
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  optimizer: "adamw"                     # adam | adamw | sgd
+  scheduler: "cosine"                    # cosine | step | plateau
+  warmup_epochs: 2
+  pos_weight: 1.0                        # BCEWithLogitsLoss positive class weight
+  grad_clip: 1.0
+  seed: 42
+
+# --- Hard Negative Mining ---
+hnm:
+  enabled: true
+  start_epoch: 3                         # Start HNM from this epoch
+  oversample_factor: 3                   # Hard examples repeated N times
+  fp_threshold: 0.4                      # False positive probability threshold
+  fn_threshold: 0.6                      # False negative probability threshold
+
+# --- Augmentation ---
+augmentation:
+  train:
+    horizontal_flip: 0.5
+    vertical_flip: 0.5
+    rotation_limit: 45
+    color_jitter:
+      brightness: 0.3
+      contrast: 0.3
+      saturation: 0.2
+      hue: 0.1
+    elastic_transform: true
+    gaussian_blur: 0.3
+    random_grayscale: 0.1
+  val:
+    normalize_only: true
+
+# --- Slide-Level Aggregation ---
+aggregation:
+  method: "attention"                    # max | mean_topk | attention
+  top_k: 10                              # For mean_topk method
+
+# --- Paths ---
+paths:
+  checkpoint_dir: "./outputs/checkpoints"
+  log_dir: "./outputs/logs"
+  gradcam_dir: "./outputs/gradcam"
+  results_dir: "./outputs/results"
+
+# --- Logging ---
+logging:
+  use_wandb: false
+  project_name: "histopath-wsi"
+  log_interval: 50                       # Log every N batches
